@@ -37,8 +37,9 @@ class TransformerClassifier(nn.Module):
 		transformer_blocks = []
 		for i in range(num_layers):
 			transformer_blocks.append(TransformerEncoderLayer(embed_dim, ffn_embed_dim, num_heads, attention))
-		self.transformer_blocks = nn.Sequential(transformer_blocks)
+		self.transformer_blocks = nn.Sequential(*transformer_blocks)
 		self.fc = nn.Linear(embed_dim, num_classes)
+		print(num_classes)
 
 	def forward(self, x):
 		"""
@@ -48,13 +49,16 @@ class TransformerClassifier(nn.Module):
 		# (L, N, E)
 		token_embedding = self.token_embedding(x)
 		# (L)
-		pos_embedding = self.pos_embedding(torch.range(x.shape[0], device=x.device))
+		pos_embedding = self.pos_embedding(torch.arange(x.shape[0], device=x.device)).unsqueeze(1)
+		
 		# add
 		# (L, N, E)
 		x = token_embedding + pos_embedding
 		# (L, N, E)
 		x = self.transformer_blocks(x)
-		# (L, N, num_classes)
+		# (N, E)
+		x = x.mean(dim=0)
+		# (N, num_classes)
 		x = self.fc(x)
 
 		return x

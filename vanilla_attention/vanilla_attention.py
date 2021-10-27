@@ -3,6 +3,8 @@
 import torch
 import torch.nn.functional as F
 
+from torch import Tensor
+from typing import Optional
 from torch import nn
 
 class VanillaAttention(nn.Module):
@@ -38,9 +40,9 @@ class VanillaAttention(nn.Module):
 
 	def forward(
 		self,
-		query: Tensor,
-		key: Tensor,
-		value: Tensor,
+		query: Optional[Tensor],
+		key: Optional[Tensor],
+		value: [Tensor],
 		attn_mask: Optional[Tensor] = None,
 	):
 		"""Input shape: Sequence x Batch x Embedding
@@ -69,10 +71,10 @@ class VanillaAttention(nn.Module):
 
 		# multihead
 		# (N * h, L, d)
-		q = q.contiguous().view(-1, bsz * num_heads, head_dim).view(0, 1)
+		q = q.contiguous().view(-1, bsz * num_heads, head_dim).transpose(0, 1)
 		# (N * h, S, d)
-		k = k.contiguous().view(-1, bsz * num_heads, head_dim).view(0, 1)
-		v = v.contiguous().view(-1, bsz * num_heads, head_dim).view(0, 1)
+		k = k.contiguous().view(-1, bsz * num_heads, head_dim).transpose(0, 1)
+		v = v.contiguous().view(-1, bsz * num_heads, head_dim).transpose(0, 1)
 
 		# scaling
 		scaling = float(head_dim) ** -0.5
@@ -106,6 +108,8 @@ class VanillaAttention(nn.Module):
 		# (N * h, L, S) (N * h, S, d) -> (N * h, L, d)
 		attn_output = torch.bmm(attn_output_weights, v)
 		# L, N, d
-		attn_output = attn_output.transpose(0, 1).contiguous().view(tgt_len, bsz, head_dim)
+		attn_output = attn_output.transpose(0, 1).contiguous().view(tgt_len, bsz, embed_dim)
 		# L, N, d
 		attn_output = self.out_proj(attn_output)
+
+		return attn_output
