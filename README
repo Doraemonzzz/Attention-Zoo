@@ -1,0 +1,9 @@
+参考资料：
+- https://blog.csdn.net/qq_35687547/article/details/102172775
+- https://github.com/pbloem/former/blob/master/experiments/classify.py
+- https://github.com/pbloem/former/blob/master/former/modules.py
+
+to do
+
+- training模块化
+- 添加测速的代码
