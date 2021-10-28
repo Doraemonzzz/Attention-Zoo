@@ -47,12 +47,12 @@ class VanillaAttention(nn.Module):
 	):
 		"""Input shape: Sequence x Batch x Embedding
 		Args:
-			query (Tensor): `(L, N, E)` where L is the target sequence length, N is the batch size,
-			E is the embedding dimension.
-			key (Tensor): `(S, N, E)` where S is the source sequence length, N is the batch size,
-			E is the embedding dimension.
-			value (Tensor): `(S, N, E)` where S is the source sequence length, N is the batch size,
-			E is the embedding dimension.
+			query (Tensor): `(L, N, E1)` where L is the target sequence length, N is the batch size,
+			E1 is the embedding dimension.
+			key (Tensor): `(S, N, E1)` where S is the source sequence length, N is the batch size,
+			E1 is the embedding dimension.
+			value (Tensor): `(S, N, E2)` where S is the source sequence length, N is the batch size,
+			E2 is the embedding dimension.
 			attn_mask (Optional[Tensor], optional): typically used to implement causal attention, 
 			where the mask prevents the attention from looking forward in time (default: None).
 		"""
