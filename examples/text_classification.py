@@ -4,7 +4,8 @@ import torch
 import torch.nn.functional as F
 
 from torchtext import data, datasets
-from vanilla_attention.vanilla_attention import VanillaAttention
+from attention.vanilla_attention import VanillaAttention
+from attention.linear_attention import LinearAttention
 from transformer.transformer import TransformerClassifier
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -12,6 +13,8 @@ from argparse import ArgumentParser
 def get_attention_model(attention_type):
 	if attention_type == "vanilla":
 		return VanillaAttention
+	elif attention_type == "linear":
+		return LinearAttention
 
 def get_acc(model, data):
 	total_cnt = 0

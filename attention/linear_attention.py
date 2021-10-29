@@ -1,18 +1,15 @@
-# change from https://github.com/pytorch/fairseq/blob/main/fairseq/modules/multihead_attention.py
-
 import torch
 import torch.nn.functional as F
 
 from torch import Tensor
 from typing import Optional
 from torch import nn
+from utils.right_product import causal_product, cross_product
 
-class VanillaAttention(nn.Module):
+class LinearAttention(nn.Module):
 	"""[summary]
-	vanilla attention in "Attention Is All You Need"
-
-	Args:
-		nn ([type]): [description]
+	linear attention in "Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention"
+	https://arxiv.org/abs/2006.16236
 	"""
 	def __init__(
 		self,
@@ -21,6 +18,7 @@ class VanillaAttention(nn.Module):
 		kdim=None,
 		vdim=None,
 		dropout_rate=0.0,
+		causal=False,
 	):
 		super().__init__()
 		self.embed_dim = embed_dim
@@ -35,6 +33,8 @@ class VanillaAttention(nn.Module):
 		self.out_proj = nn.Linear(embed_dim, embed_dim)
 		# dropout rate
 		self.dropout_rate = dropout_rate
+		# causal
+		self.causal = causal
 
 		assert (self.embed_dim % self.num_heads == 0), "embed_dim must be divisible by num_heads"
 
@@ -76,40 +76,15 @@ class VanillaAttention(nn.Module):
 		k = k.contiguous().view(-1, bsz * num_heads, head_dim).transpose(0, 1)
 		v = v.contiguous().view(-1, bsz * num_heads, head_dim).transpose(0, 1)
 
-		# scaling
-		scaling = float(head_dim) ** -0.5
-		q *= scaling
-
-		# (N * h, L, S)
-		attn_output_weights = torch.bmm(q, k.transpose(1, 2))
-
-		# mask
-		# change mask to 3d
-		if attn_mask is not None:
-			if attn_mask.dim() == 3:
-				attn_mask = attn_mask.unsqueeze(0)
-				assert (list(attn_mask.size()) == [1, tgt_len, src_len]), \
-						"The size of the 2D attn_mask is not correct."
-			elif attn_mask.dim() == 3:
-				assert (list(attn_mask.size()) == [bsz * num_heads, tgt_len, src_len]), \
-						"The size of the 3D attn_mask is not correct."
-			else:
-				assert False, f"Tattn_mask's dimension {attn_mask.size()} is not supported."
-
-		if attn_mask is not None:
-			attn_output_weights += attn_mask
-
-		# softmax
-		# (N * h, L, S)
-		attn_output_weights = F.softmax(attn_output_weights, dim=-1)
-		# dropout
-		attn_output_weights = F.dropout(attn_output_weights, p=self.dropout_rate, training=self.training)
+		# (N * h, L, d)
+		if self.causal:
+			attn_output = causal_product(q, k, v)
+		else:
+			attn_output = cross_product(q, k, v)
 		# output
-		# (N * h, L, S) (N * h, S, d) -> (N * h, L, d)
-		attn_output = torch.bmm(attn_output_weights, v)
-		# L, N, d
+		# L, N, E
 		attn_output = attn_output.transpose(0, 1).contiguous().view(tgt_len, bsz, embed_dim)
-		# L, N, d
+		# L, N, E
 		attn_output = self.out_proj(attn_output)
 
 		return attn_output

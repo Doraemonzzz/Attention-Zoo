@@ -3,7 +3,20 @@
 - https://github.com/pbloem/former/blob/master/experiments/classify.py
 - https://github.com/pbloem/former/blob/master/former/modules.py
 
-to do
+# 进度
 
-- training模块化
-- 添加测速的代码
+## 21/10/27
+完成pipeline搭建, 实现vanilla_attention。
+
+## 21/10/28
+块化文本分类函数, 添加argparser, right product。
+
+## 21/10/29
+实现linear attention, 完成cross product的正确性验证
+
+
+# to do
+
+- 添加测速的代码;
+- q, k为负数时, 右乘和左乘的误差特别大;
+

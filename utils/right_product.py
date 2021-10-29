@@ -5,7 +5,7 @@ from torch import Tensor
 from typing import Optional
 from torch import nn
 
-def causal_product(q, k, v, eps=1e-6):
+def causal_product(q, k, v, eps=1e-9):
 	"""[right product of causal attention]
 	Args:
 		q (Tensor): `(N, L, E1)` where L is the target sequence length, N is the batch size,
@@ -25,12 +25,12 @@ def causal_product(q, k, v, eps=1e-6):
 	k_cum = torch.cumsum(k, dim=1)
 	# (N, L, E1) (N, L, E1) -> (N, L)
 	denom = torch.clamp_min(torch.einsum("nle,nle->nl", q, k_cum), eps)
-	# (N, L, E2) (N, L) -> (N, L, E2)
-	attn_output_weights = qkv / denom
+	# (N, L, E2) (N, L, 1) -> (N, L, E2)
+	attn_output_weights = qkv / denom.unsqueeze(-1)
 
 	return attn_output_weights
 
-def cross_product(q, k, v, eps=1e-6):
+def cross_product(q, k, v, eps=1e-9):
 	"""[right product of cross attention]
 	Args:
 		q (Tensor): `(N, L, E1)` where L is the target sequence length, N is the batch size,
@@ -42,11 +42,12 @@ def cross_product(q, k, v, eps=1e-6):
 	"""
 	# (N, S, E1) (N, S, E2) -> (N, E1, E2)
 	kv = torch.einsum("nle,nld->ned", k, v)
+	# kv = torch.bmm(k.transpose(1, 2), v)
 	# (N, L, E1) (N, E1, E2) -> (N, L, E2)
 	qkv = torch.einsum("nle,ned->nld", q, kv)
 	# (N, L, E1) (N, E1) -> (N, L)
 	denom = torch.clamp_min(torch.einsum("nle,nd->nl", q, torch.sum(k, axis=1)), eps)
-	# (N, L, E2) (N, L) -> (N, L, E2)
-	attn_output_weights = qkv / denom
+	# (N, L, E2) (N, L, 1) -> (N, L, E2)
+	attn_output_weights = qkv / denom.unsqueeze(-1)
 
 	return attn_output_weights
