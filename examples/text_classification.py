@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torchtext import data, datasets
 from attention.vanilla_attention import VanillaAttention
 from attention.linear_attention import LinearAttention
+from attention.random_feature_attention import RandomFeatureAttention
 from transformer.transformer import TransformerClassifier
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -15,6 +16,8 @@ def get_attention_model(attention_type):
 		return VanillaAttention
 	elif attention_type == "linear":
 		return LinearAttention
+	elif attention_type == "rfa":
+		return RandomFeatureAttention
 
 def get_acc(model, data):
 	total_cnt = 0

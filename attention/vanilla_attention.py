@@ -38,9 +38,9 @@ class VanillaAttention(nn.Module):
 
 	def forward(
 		self,
-		query: Optional[Tensor],
+		query: Tensor,
 		key: Optional[Tensor],
-		value: [Tensor],
+		value: Optional[Tensor],
 		attn_mask: Optional[Tensor] = None,
 	):
 		"""Input shape: Sequence x Batch x Embedding

@@ -39,7 +39,6 @@ class TransformerClassifier(nn.Module):
 			transformer_blocks.append(TransformerEncoderLayer(embed_dim, ffn_embed_dim, num_heads, attention))
 		self.transformer_blocks = nn.Sequential(*transformer_blocks)
 		self.fc = nn.Linear(embed_dim, num_classes)
-		print(num_classes)
 
 	def forward(self, x):
 		"""

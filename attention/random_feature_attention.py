@@ -1,15 +1,16 @@
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 from torch import Tensor
 from typing import Optional
 from torch import nn
 from utils.right_product import causal_product, cross_product
 
-class LinearAttention(nn.Module):
+class RandomFeatureAttention(nn.Module):
 	"""[summary]
-	linear attention in "Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention"
-	https://arxiv.org/abs/2006.16236
+	random feature attention in "RANDOM FEATURE ATTENTION"
+	https://arxiv.org/abs/2103.02143
 	"""
 	def __init__(
 		self,
@@ -17,6 +18,8 @@ class LinearAttention(nn.Module):
 		num_heads,
 		kdim=None,
 		vdim=None,
+		proj_dim=None,
+		sigma=1.0,
 		dropout_rate=0.0,
 		causal=False,
 	):
@@ -35,6 +38,12 @@ class LinearAttention(nn.Module):
 		self.dropout_rate = dropout_rate
 		# causal
 		self.causal = causal
+		# rfa
+		self.sigma = sigma
+		self.proj_dim = proj_dim if proj_dim is not None else embed_dim
+		# (H, D, E)
+		head_dim = embed_dim // num_heads
+		self.random_matrices = self.sigma * torch.randn(self.num_heads, self.proj_dim, head_dim)
 
 		assert (self.embed_dim % self.num_heads == 0), "embed_dim must be divisible by num_heads"
 
@@ -70,17 +79,22 @@ class LinearAttention(nn.Module):
 		v = self.v_proj(value)
 
 		# multihead
-		# (N * h, L, d)
-		q = q.contiguous().view(-1, bsz * num_heads, head_dim).transpose(0, 1)
+		# (L, N, h, d)
+		q = q.view(-1, bsz, num_heads, head_dim)
+		# (S, N, h, d)
+		k = k.view(-1, bsz, num_heads, head_dim)
 		# (N * h, S, d)
-		k = k.contiguous().view(-1, bsz * num_heads, head_dim).transpose(0, 1)
 		v = v.contiguous().view(-1, bsz * num_heads, head_dim).transpose(0, 1)
+
+		# feature transform
+		phi_q = self.random_project(q, self.random_matrices)
+		phi_k = self.random_project(k, self.random_matrices)
 
 		# (N * h, L, d)
 		if self.causal:
-			attn_output = causal_product(q, k, v)
+			attn_output = causal_product(phi_q, phi_k, v)
 		else:
-			attn_output = cross_product(q, k, v)
+			attn_output = cross_product(phi_q, phi_k, v)
 		# output
 		# L, N, E
 		attn_output = attn_output.transpose(0, 1).contiguous().view(tgt_len, bsz, embed_dim)
@@ -88,3 +102,33 @@ class LinearAttention(nn.Module):
 		attn_output = self.out_proj(attn_output)
 
 		return attn_output
+
+	def random_project(
+		self,
+		x: Tensor,
+		random_matrices: Tensor,
+	):
+		"""[random projection]
+		Args:
+			x (Tensor): `(L, N, H, E)` where L is the target sequence length, N is the batch size,
+				H is the number of heads, E is the embedding dimension.
+			random_matrices (Tensor): `(H, D, E)` where H is the number of heads, D is the projection dimension,
+				E is the embedding dimension.
+		"""
+		L, N, H, E = x.size()
+		H, D, E = random_matrices.size()
+		scale = 1 / np.sqrt(D)
+		# l2 normalize under feature dimension
+		# (L, N, H, E)
+		x_normalize = F.normalize(x, p=2, dim=-1)
+		# feature transform
+		# (L, N, H, E) (H, D, E) -> (L, N, H, D)
+		x_transform = torch.einsum("lnhe,hde->lnhd", x_normalize, random_matrices)
+		# get cos, sin
+		# (L, N, H, D)
+		x_sin = torch.sin(x_transform)
+		x_cos = torch.cos(x_transform)
+		# (L, N, H, D) (L, N, H, D) -> (L, N, H, 2 * D) -> (N * H, L, 2 * D)
+		phi_x = scale * torch.cat([x_sin, x_cos], dim=-1).contiguous().view(-1, L, 2 * D)
+
+		return phi_x

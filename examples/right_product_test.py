@@ -21,8 +21,7 @@ def vanilla_cross_product(q, k, v, eps=1e-9):
 	# (N, L, S) (N, S, E2) -> (N, L, E2)
 	output = torch.bmm(weights, v)
 	tmp = torch.sum(weights, dim=-1)
-	print(tmp)
-	print(weights)
+
 	return output
 
 def get_diff(m1, m2):
@@ -51,7 +50,15 @@ def test(batch=1, tgt_len=100, src_len=200, d1=100, d2=200, N=10):
 		get_diff(o1, o2)
 		
 def main():
-	test(1, 5, 4, 2, 3)
+	batch = 1
+	tgt_len = 100
+	src_len = 200
+	d1 = 100
+	d2 = 200
+	N = 10
+
+	# test(1, 5, 4, 2, 3)
+	test(batch, tgt_len, src_len, d1, d2, N)
 
 if __name__ == "__main__":
 	main()
