@@ -3,7 +3,8 @@
 import torch
 import torch.nn.functional as F
 
-from torchtext import data, datasets
+# from torchtext import data, datasets
+from torchtext.legacy import data, datasets
 from attention.vanilla_attention import VanillaAttention
 from attention.linear_attention import LinearAttention
 from attention.random_feature_attention import RandomFeatureAttention
@@ -145,8 +146,9 @@ def main():
 		print(f"epoch {i + 1}")
 		model.train()
 		
-		total_cnt = 0
-		correct_cnt = 0
+		# total_cnt = 0
+		# correct_cnt = 0
+		cnt = 0
 		for batch in tqdm(train_iter):
 			optimier.zero_grad()
 			# batch.text: (L, N)
@@ -162,11 +164,15 @@ def main():
 			loss.backward()
 			optimier.step()
 
-			break
+			cnt += 1
+			if (cnt == 100):
+				break
+
+			# break
 
 		if i % test_freq == 0:
 			acc = get_acc(model, test_iter)
-			print(f"In epoch {i + 1}, test accuracy is {correct_cnt}")
+			print(f"In epoch {i + 1}, test accuracy is {acc}")
 
 if __name__ == "__main__":
 	main()

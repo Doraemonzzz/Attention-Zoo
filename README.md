@@ -23,3 +23,7 @@
 - q, k为负数时, 右乘和左乘的误差特别大;
 - 给不同的attention适配不同的初始化。
 
+
+# requirement
+
+torchtext
