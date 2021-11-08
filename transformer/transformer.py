@@ -43,7 +43,7 @@ class TransformerClassifier(nn.Module):
 	def forward(self, x):
 		"""
 		Args:
-			x (Tensor): token index, `(L, N)`
+			x (Tensor): token index, `(L, N)` where L is the target sequence length, N is the batch size,
 		"""
 		# (L, N, E)
 		token_embedding = self.token_embedding(x)

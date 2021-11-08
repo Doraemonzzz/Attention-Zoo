@@ -20,11 +20,14 @@ def get_attention_model(attention_type):
 	elif attention_type == "rfa":
 		return RandomFeatureAttention
 
-def get_acc(model, data):
+def get_acc(model, data, max_seqlen):
 	total_cnt = 0
 	correct_cnt = 0
 	for batch in tqdm(data):
+		# seqlen, batch
 		input = batch.text[0]
+		if input.size(0) > max_seqlen:
+			input = input[:max_seqlen]
 		output = model(input)
 		label = batch.label - 1
 		pred_label = output.argmax(-1)
@@ -32,9 +35,9 @@ def get_acc(model, data):
 		total_cnt += input.size(1)
 		correct_cnt += (pred_label == label).sum().item()
 
-		break
+		# break
 	
-	return total_cnt / correct_cnt
+	return correct_cnt / total_cnt
 
 def main():
 	# device = torch.device("cuda:0" if torch.cuda.is_avaliable() else "cpu")
@@ -165,13 +168,13 @@ def main():
 			optimier.step()
 
 			cnt += 1
-			if (cnt == 100):
+			if (cnt == 1):
 				break
 
 			# break
 
 		if i % test_freq == 0:
-			acc = get_acc(model, test_iter)
+			acc = get_acc(model, test_iter, max_seqlen)
 			print(f"In epoch {i + 1}, test accuracy is {acc}")
 
 if __name__ == "__main__":
