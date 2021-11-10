@@ -15,7 +15,10 @@
 实现linear attention, 完成cross product的正确性验证。
 
 ## 21/11/3
-实现rfa,。
+实现rfa。
+
+## 21/11/10
+实现performer。
 
 # to do
 

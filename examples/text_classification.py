@@ -8,6 +8,7 @@ from torchtext.legacy import data, datasets
 from attention.vanilla_attention import VanillaAttention
 from attention.linear_attention import LinearAttention
 from attention.random_feature_attention import RandomFeatureAttention
+from attention.performer_attention import PerformerAttention
 from transformer.transformer import TransformerClassifier
 from tqdm import tqdm
 from argparse import ArgumentParser
@@ -19,6 +20,8 @@ def get_attention_model(attention_type):
 		return LinearAttention
 	elif attention_type == "rfa":
 		return RandomFeatureAttention
+	elif attention_type == "performer":
+		return PerformerAttention
 
 def get_acc(model, data, max_seqlen):
 	total_cnt = 0
@@ -89,7 +92,7 @@ def main():
 						type=int)
 	parser.add_argument("--test-freq", 
 						dest="test_freq",
-						default=1,
+						default=10,
 						type=int)
 
 	args = parser.parse_args()
@@ -168,7 +171,7 @@ def main():
 			optimier.step()
 
 			cnt += 1
-			if (cnt == 1):
+			if (cnt == 10):
 				break
 
 			# break
@@ -176,6 +179,7 @@ def main():
 		if i % test_freq == 0:
 			acc = get_acc(model, test_iter, max_seqlen)
 			print(f"In epoch {i + 1}, test accuracy is {acc}")
+		break
 
 if __name__ == "__main__":
 	main()

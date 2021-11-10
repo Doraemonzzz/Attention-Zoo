@@ -7,10 +7,10 @@ from typing import Optional
 from torch import nn
 from utils.right_product import causal_product, cross_product
 
-class RandomFeatureAttention(nn.Module):
+class PerformerAttention(nn.Module):
 	"""[summary]
-	random feature attention in "RANDOM FEATURE ATTENTION"
-	https://arxiv.org/abs/2103.02143
+	performer attention in "Rethinking Attention with Performers
+	https://arxiv.org/abs/2009.14794
 	"""
 	def __init__(
 		self,
@@ -117,7 +117,7 @@ class RandomFeatureAttention(nn.Module):
 		"""
 		L, N, H, E = x.size()
 		H, D, E = random_matrices.size()
-		scale = 1 / np.sqrt(D)
+		scale = 1 / np.sqrt(2 * D)
 		# l2 normalize under feature dimension
 		# (L, N, H, E)
 		x_normalize = F.normalize(x, p=2, dim=-1)
@@ -126,9 +126,9 @@ class RandomFeatureAttention(nn.Module):
 		x_transform = torch.einsum("lnhe,hde->lnhd", x_normalize, random_matrices)
 		# get cos, sin
 		# (L, N, H, D)
-		x_sin = torch.sin(x_transform)
-		x_cos = torch.cos(x_transform)
+		x_exp_pos = torch.exp(x_transform)
+		x_exp_neg = torch.exp(-x_transform)
 		# (L, N, H, D) (L, N, H, D) -> (L, N, H, 2 * D) -> (N * H, L, 2 * D)
-		phi_x = scale * torch.cat([x_sin, x_cos], dim=-1).contiguous().view(-1, L, 2 * D)
+		phi_x = scale * torch.cat([x_exp_pos, x_exp_neg], dim=-1).contiguous().view(-1, L, 2 * D)
 
 		return phi_x
